@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itinerario Naturalistico nel Nord della Spagna</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 sm:p-6 lg:p-8 font-sans text-slate-800 print:bg-white print:p-0">
+    <div class="hidden w-8 h-8 rounded-full bg-emerald-700 text-white border-2 border-white shadow-lg flex items-center justify-center text-sm font-bold ring-2 ring-emerald-200"></div>
+
+    <div class="max-w-7xl mx-auto bg-white shadow-2xl rounded-3xl overflow-hidden print:shadow-none print:rounded-none print:max-w-none">
+        <header class="relative bg-gradient-to-br from-emerald-900 via-teal-800 to-sky-900 text-white px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16 print:bg-slate-900 print:py-10">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_left,_white,_transparent_35%),radial-gradient(circle_at_bottom_right,_white,_transparent_30%)]"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
+                    <div>
+                        <p class="uppercase tracking-[0.35em] text-emerald-100 text-xs sm:text-sm font-semibold mb-4">Guida stampabile / PDF</p>
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight max-w-4xl">Itinerario naturalistico nel Nord della Spagna</h1>
+                        <p class="mt-5 text-lg sm:text-xl text-emerald-50 max-w-3xl leading-relaxed">Un percorso tra deserti d’argilla, faggete, gole, montagne calcaree, cascate, riserve della biosfera e coste atlantiche.</p>
+                    </div>
+                    <button id="printBtn" class="print:hidden shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-emerald-900 px-5 py-3 font-bold shadow-lg hover:bg-emerald-50 transition duration-200 focus:outline-none focus:ring-4 focus:ring-white/40">
+                        <span class="text-xl">🖨️</span>
+                        <span>Stampa / Salva in PDF</span>
+                    </button>
+                </div>
+
+                <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="rounded-2xl bg-white/10 backdrop-blur px-5 py-4 border border-white/15">
+                        <p class="text-3xl font-black">13</p>
+                        <p class="text-sm text-emerald-50 mt-1">luoghi in ordine</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/10 backdrop-blur px-5 py-4 border border-white/15">
+                        <p class="text-3xl font-black">Navarra · Aragona · Paesi Baschi</p>
+                        <p class="text-sm text-emerald-50 mt-1">aree naturali del nord</p>
+                    </div>
+                    <div class="rounded-2xl bg-white/10 backdrop-blur px-5 py-4 border border-white/15">
+                        <p class="text-3xl font-black">OSM</p>
+                        <p class="text-sm text-emerald-50 mt-1">mappa Leaflet/OpenStreetMap</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="px-6 py-8 sm:px-10 lg:px-14 lg:py-12 print:px-8 print:py-8">
+            <section class="mb-10 print:mb-8">
+                <div class="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-5 sm:px-6 shadow-sm print:shadow-none">
+                    <h2 class="text-lg font-extrabold text-amber-950 flex items-center gap-2">
+                        <span>Nota importante</span>
+                    </h2>
+                    <p class="mt-2 text-amber-900 leading-relaxed">
+                        Le coordinate sono approssimative per aree naturali estese e indicano punti centrali, accessi noti o punti comunemente mappati. Google Maps accetta query con coordinate decimali. Le voci “Sorgente dell’Urederra” e “Nacedero del Urederra” indicano lo stesso sito o aree fortemente sovrapposte: entrambe sono mantenute come richiesto e segnalate nelle rispettive schede.
+                    </p>
+                    <p class="mt-2 text-amber-900 leading-relaxed">
+                        Per evitare immagini non affidabili o non verificabili, il documento non usa foto dirette inventate: per ogni luogo sono forniti link a Google Maps, Wikimedia Commons e ricerca immagini.
+                    </p>
+                </div>
+            </section>
+
+            <section class="mb-12 print:mb-8">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.25em] text-emerald-700 font-bold">Mappa interattiva</p>
+                        <h2 class="text-3xl font-black text-slate-950 mt-1">Pin numerati dell’itinerario</h2>
+                    </div>
+                    <p class="text-sm text-slate-600 max-w-2xl">
+                        Alcuni pin sovrapposti o molto vicini sono leggermente sfalsati solo sulla mappa per renderli selezionabili; le coordinate reali restano quelle indicate in tabella e nelle schede.
+                    </p>
+                </div>
+                <div id="map" class="h-[520px] w-full rounded-3xl overflow-hidden border border-slate-200 shadow-lg print:shadow-none print:h-[430px]"></div>
+                <div id="mapError" class="hidden mt-4 rounded-2xl border border-red-200 bg-red-50 text-red-800 px-5 py-4"></div>
+            </section>
+
+            <section class="mb-12 print:mb-8">
+                <div class="mb-5">
+                    <p class="text-sm uppercase tracking-[0.25em] text-emerald-700 font-bold">Riepilogo</p>
+                    <h2 class="text-3xl font-black text-slate-950 mt-1">Tabella coordinate e link</h2>
+                </div>
+                <div class="overflow-x-auto rounded-3xl border border-slate-200 shadow-sm print:shadow-none print:overflow-visible">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead class="bg-slate-900 text-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-bold">#</th>
+                                <th class="px-4 py-3 text-left font-bold">Luogo</th>
+                                <th class="px-4 py-3 text-left font-bold">Latitudine</th>
+                                <th class="px-4 py-3 text-left font-bold">Longitudine</th>
+                                <th class="px-4 py-3 text-left font-bold">Google Maps</th>
+                                <th class="px-4 py-3 text-left font-bold">Foto / Commons</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryTable" class="divide-y divide-slate-200 bg-white"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <div class="mb-6">
+                    <p class="text-sm uppercase tracking-[0.25em] text-emerald-700 font-bold">Schede dettagliate</p>
+                    <h2 class="text-3xl font-black text-slate-950 mt-1">Luoghi dell’itinerario</h2>
+                </div>
+                <div id="placeCards" class="grid grid-cols-1 lg:grid-cols-2 gap-6 print:grid-cols-1"></div>
+            </section>
+        </main>
+
+        <footer class="px-6 py-8 sm:px-10 lg:px-14 bg-slate-950 text-slate-200 print:bg-white print:text-slate-800 print:border-t print:border-slate-200">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <p class="text-sm leading-relaxed">
+                    Documento generato per uso personale di pianificazione. Verificare sempre accessi, permessi, meteo, stagionalità, portata dei corsi d’acqua e regole dei parchi prima della visita.
+                </p>
+                <button id="printBtnFooter" class="print:hidden inline-flex items-center justify-center rounded-2xl bg-emerald-500 text-white px-5 py-3 font-bold hover:bg-emerald-400 transition duration-200">
+                    Stampa / Salva in PDF
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const places = [
+            {
+                n: 1,
+                name: "Tudela — Bardenas Reales",
+                display: "Tudela (Bardenas Reales)",
+                lat: 42.19083,
+                lng: -1.47,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.19083,-1.47000",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Bardenas+Reales&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Bardenas+Reales",
+                description: "Paesaggio semi-desertico spettacolare, famoso per calanchi, altipiani d’argilla, barrancos e forme erosive dai colori ocra. Tudela è una base pratica per raggiungere le Bardenas Reales e organizzare visite panoramiche o percorsi su piste consentite."
+            },
+            {
+                n: 2,
+                name: "Parque Natural de Urbasa y Andía",
+                display: "Parque Natural de Urbasa y Andía",
+                lat: 42.82,
+                lng: -2.12,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.82000,-2.12000",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Urbasa+Andia+Natural+Park&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Parque+Natural+de+Urbasa+y+Andia",
+                description: "Grande area naturale navarrese di altopiani carsici, pascoli, faggete e affacci panoramici. È una tappa ideale per escursioni fresche e ombreggiate, osservazione geologica e collegamenti con il vicino Urederra."
+            },
+            {
+                n: 3,
+                name: "Balcón de Pilatos / Mirador de Ubaba",
+                display: "Balcón de Pilatos",
+                lat: 42.80642,
+                lng: -2.13069,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.80642,-2.13069",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Balc%C3%B3n+de+Pilatos+Ubaba&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Balc%C3%B3n+de+Pilatos+Ubaba",
+                description: "Belvedere naturale sul bordo dell’altopiano di Urbasa, con vista su pareti rocciose e vallate sottostanti. È un punto scenografico per comprendere la morfologia del massiccio e la relazione con la sorgente dell’Urederra."
+            },
+            {
+                n: 4,
+                name: "Foreste di faggi — Urbasa/Andía",
+                display: "Foreste di faggi",
+                lat: 42.82,
+                lng: -2.12,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.82000,-2.12000",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=hayedo+Urbasa&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=foresta+di+faggi+Urbasa",
+                description: "Le faggete di Urbasa e Andía offrono ambienti ombrosi, muschi, radure e atmosfere molto diverse dalle aree aride del sud della Navarra. La coordinata è rappresentativa dell’area del parco e coincide con quella del parco naturale."
+            },
+            {
+                n: 5,
+                name: "Sorgente dell'Urederra",
+                display: "Sorgente dell'Urederra",
+                lat: 42.80454,
+                lng: -2.13501,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.80454,-2.13501",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Nacedero+del+Urederra&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Sorgente+dell%27Urederra",
+                description: "Area celebre per acque turchesi, pozze e cascate nel contesto del massiccio di Urbasa. La visita può richiedere prenotazione o controllo degli accessi secondo stagione. Questa voce si sovrappone alla voce 7, mantenuta separata come richiesto."
+            },
+            {
+                n: 6,
+                name: "Mallos de Riglos",
+                display: "Mallos de Riglos",
+                lat: 42.350661,
+                lng: -0.728275,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.350661,-0.728275",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Mallos+de+Riglos&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Mallos+de+Riglos",
+                description: "Imponenti conglomerati rocciosi verticali dell’Aragona, iconici per escursionismo, arrampicata e osservazione di rapaci. Il villaggio di Riglos ai piedi delle pareti offre prospettive ravvicinate sulle formazioni."
+            },
+            {
+                n: 7,
+                name: "Nacedero del Urederra",
+                display: "Nacedero del Urederra",
+                lat: 42.80454,
+                lng: -2.13501,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.80454,-2.13501",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Nacedero+del+Urederra&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Nacedero+del+Urederra",
+                description: "Denominazione spagnola del sito della sorgente dell’Urederra. È lo stesso luogo, o un’area fortemente sovrapposta, rispetto alla voce 5. Viene mantenuto come voce autonoma per rispettare l’ordine e la lista fornita."
+            },
+            {
+                n: 8,
+                name: "Sierra de Cantabria / Sierra de Toloño",
+                display: "Sierra de Cantabria",
+                lat: 42.59788,
+                lng: -2.59174,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.59788,-2.59174",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Sierra+de+Cantabria+Tolo%C3%B1o&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Sierra+de+Cantabria+Tolo%C3%B1o",
+                description: "Catena montuosa che separa la Rioja Alavesa da zone più umide del nord, con creste calcaree, boschi, vigneti ai piedi e panorami estesi. Il toponimo Sierra de Toloño è spesso associato alla stessa area montuosa."
+            },
+            {
+                n: 9,
+                name: "Salto del Nervión",
+                display: "Salto del Nervion",
+                lat: 42.939742,
+                lng: -2.979611,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.939742,-2.979611",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Salto+del+Nervion&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Salto+del+Nervion",
+                description: "Grande cascata stagionale al confine tra Castiglia e León e Paesi Baschi, spettacolare dopo piogge o disgelo. Nei periodi secchi può avere poca o nessuna acqua, ma il canyon resta scenografico."
+            },
+            {
+                n: 10,
+                name: "Foz de Lumbier",
+                display: "Foz de Lumbier",
+                lat: 42.6322,
+                lng: -1.3018,
+                maps: "https://www.google.com/maps/search/?api=1&query=42.63220,-1.30180",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Foz+de+Lumbier&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Foz+de+Lumbier",
+                description: "Gola fluviale della Navarra attraversata da un facile percorso sull’antica ferrovia, con pareti verticali e tunnel. È nota per la presenza di avvoltoi e per un paesaggio accessibile ma molto suggestivo."
+            },
+            {
+                n: 11,
+                name: "Parque Natural de Gorbeia / Cruz de Gorbeia",
+                display: "Parque Natural de Gorbeia",
+                lat: 43.03392,
+                lng: -2.78118,
+                maps: "https://www.google.com/maps/search/?api=1&query=43.03392,-2.78118",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Gorbeia+Natural+Park&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Parque+Natural+de+Gorbeia",
+                description: "Uno dei principali parchi naturali dei Paesi Baschi, con praterie, faggete, massicci montuosi e la celebre croce sulla vetta del Gorbeia. Offre itinerari di diversa difficoltà e paesaggi molto verdi."
+            },
+            {
+                n: 12,
+                name: "Urdaibai Biosphere Reserve",
+                display: "Urdaibai Biosphere Reserve",
+                lat: 43.40149,
+                lng: -2.69341,
+                maps: "https://www.google.com/maps/search/?api=1&query=43.40149,-2.69341",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=Urdaibai+Biosphere+Reserve&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=Urdaibai+Biosphere+Reserve",
+                description: "Riserva della biosfera UNESCO nei Paesi Baschi, caratterizzata da estuario, zone umide, spiagge, colline e mosaico rurale. È un’area eccellente per birdwatching, passeggiate costiere e osservazione degli ambienti tidali."
+            },
+            {
+                n: 13,
+                name: "San Juan de Gaztelugatxe",
+                display: "San Juan de Gaztelugatxe",
+                lat: 43.44741,
+                lng: -2.78483,
+                maps: "https://www.google.com/maps/search/?api=1&query=43.44741,-2.78483",
+                photo_search: "https://commons.wikimedia.org/w/index.php?search=San+Juan+de+Gaztelugatxe&title=Special:MediaSearch&type=image",
+                google_images: "https://www.google.com/search?tbm=isch&q=San+Juan+de+Gaztelugatxe",
+                description: "Isolotto roccioso collegato alla costa da un ponte e una scalinata panoramica, con eremo sulla sommità. È una delle icone paesaggistiche della costa basca e può richiedere prenotazioni nei periodi di maggiore affluenza."
+            }
+        ];
+
+        const tableBody = document.getElementById("summaryTable");
+        const cardsContainer = document.getElementById("placeCards");
+
+        function formatCoord(value) {
+            return Number(value).toFixed(5);
+        }
+
+        function externalLink(url, label, extraClasses = "") {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-bold transition duration-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 ${extraClasses}">${label}</a>`;
+        }
+
+        function overlapNotice(place) {
+            if (place.n === 5) {
+                return `<div class="mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900"><strong>Sovrapposizione:</strong> corrisponde allo stesso sito o a un’area fortemente sovrapposta alla voce 7, “Nacedero del Urederra”.</div>`;
+            }
+            if (place.n === 7) {
+                return `<div class="mt-4 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-900"><strong>Sovrapposizione:</strong> denominazione spagnola della voce 5, “Sorgente dell’Urederra”; entrambe le voci sono mantenute come richiesto.</div>`;
+            }
+            if (place.n === 4) {
+                return `<div class="mt-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900"><strong>Affinità:</strong> punto rappresentativo all’interno dell’area Urbasa/Andía, con coordinate coincidenti con la voce 2.</div>`;
+            }
+            return "";
+        }
+
+        function renderTable() {
+            tableBody.innerHTML = places.map((place, index) => `
+                <tr class="${index % 2 === 0 ? "bg-white" : "bg-slate-50"} hover:bg-emerald-50 transition duration-150">
+                    <td class="px-4 py-3 font-black text-emerald-800">${place.n}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-950">${place.name}</td>
+                    <td class="px-4 py-3 font-mono text-slate-700">${formatCoord(place.lat)}</td>
+                    <td class="px-4 py-3 font-mono text-slate-700">${formatCoord(place.lng)}</td>
+                    <td class="px-4 py-3">${externalLink(place.maps, "Apri mappa")}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-2">
+                            ${externalLink(place.photo_search, "Wikimedia")}
+                            ${externalLink(place.google_images, "Google immagini", "bg-sky-50 text-sky-800 hover:bg-sky-100 border-sky-200")}
+                        </div>
+                    </td>
+                </tr>
+            `).join("");
+        }
+
+        function renderCards() {
+            cardsContainer.innerHTML = places.map(place => `
+                <article id="luogo-${place.n}" class="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden break-inside-avoid print:shadow-none print:rounded-2xl print:border-slate-300">
+                    <div class="bg-gradient-to-r from-slate-950 to-emerald-900 text-white px-6 py-5 flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.25em] text-emerald-200 font-bold">Tappa ${place.n}</p>
+                            <h3 class="text-2xl font-black mt-1 leading-tight">${place.display}</h3>
+                        </div>
+                        <div class="shrink-0 w-12 h-12 rounded-2xl bg-white text-emerald-900 flex items-center justify-center font-black text-xl shadow-md">${place.n}</div>
+                    </div>
+                    <div class="p-6">
+                        <p class="text-slate-700 leading-relaxed">${place.description}</p>
+
+                        ${overlapNotice(place)}
+
+                        <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3">
+                                <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Latitudine</p>
+                                <p class="font-mono font-bold text-slate-950 mt-1">${formatCoord(place.lat)}</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 border border-slate-200 px-4 py-3">
+                                <p class="text-xs uppercase tracking-widest text-slate-500 font-bold">Longitudine</p>
+                                <p class="font-mono font-bold text-slate-950 mt-1">${formatCoord(place.lng)}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-5">
+                            <div class="flex items-start gap-3">
+                                <div class="text-2xl">🖼️</div>
+                                <div>
+                                    <p class="font-extrabold text-slate-950">Immagini non incorporate</p>
+                                    <p class="text-sm text-slate-600 mt-1 leading-relaxed">Non vengono usate foto dirette non verificate. Usa i link seguenti per cercare immagini e verificarne licenza e provenienza.</p>
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        ${externalLink(place.maps, "Google Maps")}
+                                        ${externalLink(place.photo_search, "Ricerca Wikimedia Commons")}
+                                        ${externalLink(place.google_images, "Ricerca Google immagini", "bg-sky-50 text-sky-800 hover:bg-sky-100 border-sky-200")}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        function getDisplayCoordinates() {
+            const seen = {};
+            return places.map(place => {
+                const key = `${place.lat.toFixed(5)},${place.lng.toFixed(5)}`;
+                seen[key] = (seen[key] || 0) + 1;
+                const count = seen[key] - 1;
+                const offset = count * 0.006;
+                return {
+                    ...place,
+                    displayLat: place.lat + offset,
+                    displayLng: place.lng + offset
+                };
+            });
+        }
+
+        function initMap() {
+            const mapError = document.getElementById("mapError");
+            try {
+                if (typeof L === "undefined") {
+                    throw new Error("Leaflet non è stato caricato correttamente.");
+                }
+
+                const map = L.map("map", {
+                    scrollWheelZoom: true,
+                    zoomControl: true
+                });
+
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                const markerPlaces = getDisplayCoordinates();
+                const bounds = [];
+
+                markerPlaces.forEach(place => {
+                    const markerHtml = `
+                        <div class="w-8 h-8 rounded-full bg-emerald-700 text-white border-2 border-white shadow-lg flex items-center justify-center text-sm font-bold ring-2 ring-emerald-200">
+                            ${place.n}
+                        </div>
+                    `;
+
+                    const icon = L.divIcon({
+                        html: markerHtml,
+                        className: "",
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16],
+                        popupAnchor: [0, -18]
+                    });
+
+                    const marker = L.marker([place.displayLat, place.displayLng], { icon }).addTo(map);
+                    marker.bindPopup(`
+                        <div class="min-w-[210px]">
+                            <div class="font-bold text-slate-900 text-base">${place.n}. ${place.display}</div>
+                            <div class="text-xs text-slate-600 mt-1">Coordinate: ${formatCoord(place.lat)}, ${formatCoord(place.lng)}</div>
+                            <div class="mt-3 flex flex-col gap-2">
+                                <a href="${place.maps}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 font-bold">Apri in Google Maps</a>
+                                <a href="#luogo-${place.n}" class="text-slate-700 font-bold">Vai alla scheda</a>
+                            </div>
+                        </div>
+                    `);
+
+                    bounds.push([place.displayLat, place.displayLng]);
+                });
+
+                map.fitBounds(bounds, { padding: [35, 35] });
+            } catch (error) {
+                mapError.classList.remove("hidden");
+                mapError.textContent = "Errore nel caricamento della mappa: " + error.message;
+                console.error(error);
+            }
+        }
+
+        function attachPrintButtons() {
+            const buttons = [document.getElementById("printBtn"), document.getElementById("printBtnFooter")];
+            buttons.forEach(button => {
+                if (button) {
+                    button.addEventListener("click", () => {
+                        try {
+                            window.print();
+                        } catch (error) {
+                            alert("Impossibile avviare la stampa dal browser. Usa il menu del browser: File > Stampa.");
+                            console.error(error);
+                        }
+                    });
+                }
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderTable();
+            renderCards();
+            attachPrintButtons();
+            initMap();
+        });
+    </script>
+<script type="text/javascript" src="/_Incapsula_Resource?SWJIYLWA=719d34d31c8e3a6e6fffd425f7e032f3&ns=56&cb=46567529" async></script></body>
+</html>
